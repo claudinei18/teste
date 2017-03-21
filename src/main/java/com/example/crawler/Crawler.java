@@ -5,10 +5,9 @@ package com.example.crawler;
  * Created by claudinei on 21/02/17.
  */
 
-import org.jsoup.Connection;
+import com.mongodb.*;
+import com.mongodb.util.JSON;
 import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
 
 import java.net.*;
 import java.util.*;
@@ -22,7 +21,9 @@ import java.util.regex.Pattern;
  */
 public class Crawler {
     private static Map<InetAddress, String> hmapDns;
-
+    static Mongo mongo;
+    static DB db;
+    static DBCollection collection;
 
     /**
      * @param dominio
@@ -30,7 +31,11 @@ public class Crawler {
      */
     public static InetAddress getIp(String dominio) {
         try {
-            return InetAddress.getByName(new URL(dominio).getHost());
+            InetAddress ip = InetAddress.getByName(new URL(dominio).getHost());
+            String insertIp = ip.getHostAddress();
+            insertInMongo(dominio, insertIp);
+
+            return ip;
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -96,12 +101,34 @@ public class Crawler {
         return allows;
     }
 
+    public static void insertInMongo(String url, String dominio){
+        BasicDBObject document = new BasicDBObject();
+
+        BasicDBObject documentDetail = new BasicDBObject();
+        documentDetail.put("url", url);
+        documentDetail.put("dominio", dominio);
+
+        document.put("detail", documentDetail);
+
+        collection.insert(document);
+
+    }
+
 
     /**
      * @param args
      * */
     public static void main(String[] args) {
         hmapDns = new HashMap<InetAddress, String>();
+        mongo = new Mongo("localhost", 27017);
+        db = mongo.getDB("test");
+        collection = db.getCollection("dns");
+
+        BasicDBObject document = new BasicDBObject();
+        document.put("database", "mkyongDB");
+        document.put("table", "dns");
+
+        collection.insert(document);
 
         try {
             String read = null;
